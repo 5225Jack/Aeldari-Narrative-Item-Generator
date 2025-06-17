@@ -65,7 +65,7 @@ This rule applies to BOTH weapon and vehicle lists:
 This rule applies if the "Random Anti-Modifiers" toggle is turned ON:
 
 - Any modifier that starts with "Anti-" will be affected.
-  → If it already includes a value like (4+), that number will be replaced with a random number between 1 and 6.
+  → If it already includes a value like (4+), that number will be replaced with a random number between 2 and 5.
   → If it does NOT include a value, a random (2–5)+ will be appended.
 
 EXAMPLES:
