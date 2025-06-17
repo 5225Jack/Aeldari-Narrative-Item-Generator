@@ -1,5 +1,6 @@
-let items = [];
-let modifiers = [];
+let weaponList = [];
+let modifierPool1 = [];
+let modifierPool2 = [];
 
 document.getElementById('upload').addEventListener('change', handleFile, false);
 document.getElementById('generateBtn').addEventListener('click', generateRandomItems);
@@ -12,14 +13,25 @@ function handleFile(event) {
     const data = new Uint8Array(e.target.result);
     const workbook = XLSX.read(data, { type: 'array' });
 
-    // Assume Sheet1 has items, Sheet2 has modifiers
-    const itemSheet = workbook.SheetNames[0];
-    const modSheet = workbook.SheetNames[1];
+    const sheet = workbook.Sheets[workbook.SheetNames[0]];
+    const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
 
-    items = XLSX.utils.sheet_to_json(workbook.Sheets[itemSheet], { header: 1 }).flat().filter(Boolean);
-    modifiers = XLSX.utils.sheet_to_json(workbook.Sheets[modSheet], { header: 1 }).flat().filter(Boolean);
+    // Reset lists
+    weaponList = [];
+    modifierPool1 = [];
+    modifierPool2 = [];
 
-    alert('Excel file loaded! Items: ' + items.length + ', Modifiers: ' + modifiers.length);
+    rows.slice(1).forEach(row => {
+      const weapon = row[0]?.trim();
+      const mod1 = row[1]?.trim();
+      const mod2 = row[2]?.trim();
+
+      if (weapon) weaponList.push(weapon);
+      if (mod1) modifierPool1.push(mod1);
+      if (mod2) modifierPool2.push(mod2);
+    });
+
+    alert(`Loaded! Weapons: ${weaponList.length}, Modifier 1s: ${modifierPool1.length}, Modifier 2s: ${modifierPool2.length}`);
   };
 
   reader.readAsArrayBuffer(file);
@@ -27,39 +39,46 @@ function handleFile(event) {
 
 function generateRandomItems() {
   const numItems = parseInt(document.getElementById('numItems').value);
-  const numModifiers = parseInt(document.getElementById('numModifiers').value);
+  const useRandomModifiers = document.getElementById('randomToggle').checked;
   const outputDiv = document.getElementById('output');
 
-  if (items.length === 0 || modifiers.length === 0) {
-    outputDiv.innerHTML = '<div class="alert alert-warning">Please upload a valid Excel file with items and modifiers.</div>';
+  if (weaponList.length === 0 || (modifierPool1.length === 0 && modifierPool2.length === 0)) {
+    outputDiv.innerHTML = '<div class="alert alert-warning">Please upload a valid Excel file first.</div>';
     return;
   }
 
   const results = [];
 
   for (let i = 0; i < numItems; i++) {
-    const item = getRandomFromArray(items);
-    const selectedMods = getMultipleRandom(modifiers, numModifiers);
+    const weapon = getRandomFromArray(weaponList);
+    const isMeleeOnly = weapon.toLowerCase().includes('(melee only)');
+    const numModifiers = useRandomModifiers ? getRandomInt(1, 3) : parseInt(document.getElementById('numModifiers').value);
 
-    results.push({
-      item,
-      modifiers: selectedMods
-    });
+    let chosenMods = [];
+
+    if (isMeleeOnly) {
+      chosenMods = getMultipleRandom(modifierPool2, numModifiers);
+    } else {
+      const combinedPool = [...modifierPool1, ...modifierPool2];
+      chosenMods = getMultipleRandom(combinedPool, numModifiers);
+    }
+
+    results.push({ weapon, modifiers: chosenMods });
   }
 
-  // Display results
+  // Display
   let html = '<table class="table table-dark table-bordered">';
-  html += '<thead><tr><th>#</th><th>Item</th><th>Modifiers</th></tr></thead><tbody>';
+  html += '<thead><tr><th>#</th><th>Weapon</th><th>Modifiers</th></tr></thead><tbody>';
 
-  results.forEach((res, idx) => {
-    html += `<tr><td>${idx + 1}</td><td>${res.item}</td><td>${res.modifiers.join(', ')}</td></tr>`;
+  results.forEach((entry, idx) => {
+    html += `<tr><td>${idx + 1}</td><td>${entry.weapon}</td><td>${entry.modifiers.join(', ')}</td></tr>`;
   });
 
   html += '</tbody></table>';
   outputDiv.innerHTML = html;
 }
 
-// Helpers
+// Utility functions
 function getRandomFromArray(arr) {
   return arr[Math.floor(Math.random() * arr.length)];
 }
@@ -67,4 +86,8 @@ function getRandomFromArray(arr) {
 function getMultipleRandom(arr, num) {
   const shuffled = [...arr].sort(() => 0.5 - Math.random());
   return shuffled.slice(0, num);
+}
+
+function getRandomInt(min, max) {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
 }
