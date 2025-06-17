@@ -86,7 +86,7 @@ function processWeaponList(rows) {
     const isMeleeOnly = weapon.toLowerCase().includes('(melee only)');
     const chosenCount = useRandomModifiers ? getRandomInt(1, 3) : modifierCount;
 
-    const pool = isMeleeOnly ? modifierPool2 : [...modifierPool1, ...modifierPool2];
+    const pool = isMeleeOnly ? modifierPool2 : modifierPool1;
     const chosenModifiers = getFilteredRandomModifiers(pool, chosenCount);
 
     results.push({ weapon, modifiers: chosenModifiers });
@@ -127,8 +127,8 @@ function processVehicleList(rows) {
 
   rows.slice(1).forEach(row => {
     const vehicle = row[0]?.trim();
-    const mod2 = row[1]?.trim();
-    const mod3 = row[2]?.trim();
+    const mod2 = row[1]?.trim(); // standard
+    const mod3 = row[2]?.trim(); // one-use
 
     if (vehicle) vehicles.push(vehicle);
     if (mod2) standardModifiers.push(mod2);
