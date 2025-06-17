@@ -5,7 +5,7 @@ let modifierPool2 = [];
 document.getElementById('upload').addEventListener('change', handleFile, false);
 document.getElementById('generateBtn').addEventListener('click', generateRandomItems);
 
-let activeProcessor = null; // Will point to processWeaponList or processVehicleList
+let activeProcessor = null;
 
 function handleFile(event) {
   const file = event.target.files[0];
@@ -60,7 +60,6 @@ function processWeaponList(rows) {
   const numItems = parseInt(document.getElementById('numItems').value);
   const modifierCount = parseInt(document.getElementById('numModifiers').value);
 
-  // Reset pools
   weaponList = [];
   modifierPool1 = [];
   modifierPool2 = [];
@@ -87,16 +86,10 @@ function processWeaponList(rows) {
     const isMeleeOnly = weapon.toLowerCase().includes('(melee only)');
     const chosenCount = useRandomModifiers ? getRandomInt(1, 3) : modifierCount;
 
-    let modifiers = [];
+    const pool = isMeleeOnly ? modifierPool2 : [...modifierPool1, ...modifierPool2];
+    const chosenModifiers = getFilteredRandomModifiers(pool, chosenCount);
 
-    if (isMeleeOnly) {
-      modifiers = getFilteredRandomModifiers(modifierPool2, chosenCount);
-    } else {
-      const combined = [...modifierPool1, ...modifierPool2];
-      modifiers = getFilteredRandomModifiers(combined, chosenCount);
-    }
-
-    results.push({ weapon, modifiers });
+    results.push({ weapon, modifiers: chosenModifiers });
   }
 
   renderWeaponTable(results);
@@ -129,17 +122,17 @@ function processVehicleList(rows) {
   const modifierCount = parseInt(document.getElementById('numModifiers').value);
 
   const vehicles = [];
-  const modifiers = [];
-  const addons = [];
+  const standardModifiers = [];
+  const oneUseModifiers = [];
 
   rows.slice(1).forEach(row => {
     const vehicle = row[0]?.trim();
-    const mod = row[1]?.trim();
-    const addon = row[2]?.trim();
+    const mod2 = row[1]?.trim();
+    const mod3 = row[2]?.trim();
 
     if (vehicle) vehicles.push(vehicle);
-    if (mod) modifiers.push(mod);
-    if (addon) addons.push(addon);
+    if (mod2) standardModifiers.push(mod2);
+    if (mod3) oneUseModifiers.push(mod3);
   });
 
   if (vehicles.length === 0) {
@@ -151,15 +144,15 @@ function processVehicleList(rows) {
 
   for (let i = 0; i < numItems; i++) {
     const vehicle = getRandomFromArray(vehicles);
-    const chosenModCount = useRandomModifiers ? getRandomInt(1, 3) : modifierCount;
+    const isOneUse = vehicle.toLowerCase().includes('(one use)');
+    const chosenCount = useRandomModifiers ? getRandomInt(1, 3) : modifierCount;
 
-    const chosenModifiers = getFilteredRandomModifiers(modifiers, chosenModCount);
-    const chosenAddon = getRandomFromArray(addons);
+    const pool = isOneUse ? oneUseModifiers : standardModifiers;
+    const chosenModifiers = getFilteredRandomModifiers(pool, chosenCount);
 
     results.push({
       vehicle,
-      modifiers: chosenModifiers,
-      addon: chosenAddon
+      modifiers: chosenModifiers
     });
   }
 
@@ -168,16 +161,14 @@ function processVehicleList(rows) {
 
 function renderVehicleTable(results) {
   let html = '<table class="table table-dark table-bordered">';
-  html += '<thead><tr><th>#</th><th>Vehicle</th><th>Modifiers</th><th>Addon</th></tr></thead><tbody>';
+  html += '<thead><tr><th>#</th><th>Vehicle</th><th>Modifiers</th></tr></thead><tbody>';
 
   results.forEach((entry, idx) => {
     const cleanedMods = entry.modifiers.map(m => m.replace(/^\*\s*/, '').trim());
-    const cleanAddon = entry.addon.replace(/^\*\s*/, '').trim();
     html += `<tr>
       <td>${idx + 1}</td>
       <td>${entry.vehicle}</td>
       <td>${cleanedMods.join(', ')}</td>
-      <td>${cleanAddon}</td>
     </tr>`;
   });
 
