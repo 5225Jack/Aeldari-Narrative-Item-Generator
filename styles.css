@@ -1,0 +1,23 @@
+body {
+  font-family: 'Segoe UI', sans-serif;
+}
+
+h1 {
+  font-weight: bold;
+}
+
+#output {
+  white-space: pre-wrap;
+}
+
+.card {
+  border-radius: 12px;
+}
+
+table {
+  margin-top: 20px;
+}
+
+td, th {
+  padding: 8px 12px;
+}
