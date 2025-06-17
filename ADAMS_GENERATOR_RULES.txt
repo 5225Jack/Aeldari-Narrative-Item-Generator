@@ -59,6 +59,20 @@ This rule applies to BOTH weapon and vehicle lists:
 - In the output, the asterisk (*) will be hidden for a cleaner look.
 
 ================================================================================
+🎯 ANTI-MODIFIER RANDOMIZATION RULE
+================================================================================
+
+This rule applies if the "Random Anti-Modifiers" toggle is turned ON:
+
+- Any modifier that starts with "Anti-" will be affected.
+  → If it already includes a value like (4+), that number will be replaced with a random number between 1 and 6.
+  → If it does NOT include a value, a random (1–6)+ will be appended.
+
+EXAMPLES:
+- "Anti-Character (4+)" → "Anti-Character (2+)"
+- "Anti-Vehicle" → "Anti-Vehicle (5+)"
+
+================================================================================
 📁 SETUP INSTRUCTIONS
 ================================================================================
 
@@ -68,4 +82,4 @@ This rule applies to BOTH weapon and vehicle lists:
 4. Upload your Excel file using the file input in the app.
 5. Set your item and modifier options and click "Generate Random List".
 
-That's it! Your randomized table will appear on the page.
+Your randomized table will appear on the page.
