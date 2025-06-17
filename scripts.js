@@ -47,16 +47,14 @@ function generateRandomItems() {
   if (activeProcessor) {
     activeProcessor();
   } else {
-    document.getElementById('output').innerHTML = '<div class="alert alert-danger">No valid Excel data loaded.</div>';
+    document.getElementById('output').innerHTML =
+      '<div class="alert alert-danger">No valid Excel data loaded.</div>';
   }
 }
 
-//
-// ========== WEAPON LOGIC ==========
-//
-
 function processWeaponList(rows) {
   const useRandomModifiers = document.getElementById('randomToggle').checked;
+  const randomizeAnti = document.getElementById('randomAntiToggle').checked;
   const numItems = parseInt(document.getElementById('numItems').value);
   const modifierCount = parseInt(document.getElementById('numModifiers').value);
 
@@ -75,7 +73,8 @@ function processWeaponList(rows) {
   });
 
   if (weaponList.length === 0) {
-    document.getElementById('output').innerHTML = '<div class="alert alert-warning">No weapons found in file.</div>';
+    document.getElementById('output').innerHTML =
+      '<div class="alert alert-warning">No weapons found in file.</div>';
     return;
   }
 
@@ -92,32 +91,12 @@ function processWeaponList(rows) {
     results.push({ weapon, modifiers: chosenModifiers });
   }
 
-  renderWeaponTable(results);
+  renderItemTable(results, 'Weapon', randomizeAnti);
 }
-
-function renderWeaponTable(results) {
-  let html = '<table class="table table-dark table-bordered">';
-  html += '<thead><tr><th>#</th><th>Weapon</th><th>Modifiers</th></tr></thead><tbody>';
-
-  results.forEach((entry, idx) => {
-    const cleanedMods = entry.modifiers.map(m => m.replace(/^\*\s*/, '').trim());
-    html += `<tr>
-      <td>${idx + 1}</td>
-      <td>${entry.weapon}</td>
-      <td>${cleanedMods.join(', ')}</td>
-    </tr>`;
-  });
-
-  html += '</tbody></table>';
-  document.getElementById('output').innerHTML = html;
-}
-
-//
-// ========== VEHICLE LOGIC ==========
-//
 
 function processVehicleList(rows) {
   const useRandomModifiers = document.getElementById('randomToggle').checked;
+  const randomizeAnti = document.getElementById('randomAntiToggle').checked;
   const numItems = parseInt(document.getElementById('numItems').value);
   const modifierCount = parseInt(document.getElementById('numModifiers').value);
 
@@ -127,8 +106,8 @@ function processVehicleList(rows) {
 
   rows.slice(1).forEach(row => {
     const vehicle = row[0]?.trim();
-    const mod2 = row[1]?.trim(); // standard
-    const mod3 = row[2]?.trim(); // one-use
+    const mod2 = row[1]?.trim();
+    const mod3 = row[2]?.trim();
 
     if (vehicle) vehicles.push(vehicle);
     if (mod2) standardModifiers.push(mod2);
@@ -136,7 +115,8 @@ function processVehicleList(rows) {
   });
 
   if (vehicles.length === 0) {
-    document.getElementById('output').innerHTML = '<div class="alert alert-warning">No vehicles found in file.</div>';
+    document.getElementById('output').innerHTML =
+      '<div class="alert alert-warning">No vehicles found in file.</div>';
     return;
   }
 
@@ -150,24 +130,31 @@ function processVehicleList(rows) {
     const pool = isOneUse ? oneUseModifiers : standardModifiers;
     const chosenModifiers = getFilteredRandomModifiers(pool, chosenCount);
 
-    results.push({
-      vehicle,
-      modifiers: chosenModifiers
-    });
+    results.push({ vehicle, modifiers: chosenModifiers });
   }
 
-  renderVehicleTable(results);
+  renderItemTable(results, 'Vehicle', randomizeAnti);
 }
 
-function renderVehicleTable(results) {
-  let html = '<table class="table table-dark table-bordered">';
-  html += '<thead><tr><th>#</th><th>Vehicle</th><th>Modifiers</th></tr></thead><tbody>';
+function renderItemTable(results, label, randomizeAnti) {
+  let html = `<table class="table table-dark table-bordered">
+    <thead><tr><th>#</th><th>${label}</th><th>Modifiers</th></tr></thead><tbody>`;
 
   results.forEach((entry, idx) => {
-    const cleanedMods = entry.modifiers.map(m => m.replace(/^\*\s*/, '').trim());
+    const cleanedMods = entry.modifiers.map(mod => {
+      let clean = mod.replace(/^\*\s*/, '').trim();
+      if (randomizeAnti && clean.startsWith('Anti-')) {
+        if (/\(\d+\+\)/.test(clean)) {
+          clean = clean.replace(/\(\d+\+\)/, `(${getRandomInt(1, 6)}+)`);
+        } else {
+          clean += ` (${getRandomInt(1, 6)}+)`;
+        }
+      }
+      return clean;
+    });
     html += `<tr>
       <td>${idx + 1}</td>
-      <td>${entry.vehicle}</td>
+      <td>${entry[label.toLowerCase()]}</td>
       <td>${cleanedMods.join(', ')}</td>
     </tr>`;
   });
@@ -175,10 +162,6 @@ function renderVehicleTable(results) {
   html += '</tbody></table>';
   document.getElementById('output').innerHTML = html;
 }
-
-//
-// ========== UTILITIES ==========
-//
 
 function getFilteredRandomModifiers(pool, maxCount) {
   const shuffled = [...pool].sort(() => 0.5 - Math.random());
