@@ -145,9 +145,9 @@ function renderItemTable(results, label, randomizeAnti) {
       let clean = mod.replace(/^\*\s*/, '').trim();
       if (randomizeAnti && clean.startsWith('Anti-')) {
         if (/\(\d+\+\)/.test(clean)) {
-          clean = clean.replace(/\(\d+\+\)/, `(${getRandomInt(1, 6)}+)`);
+          clean = clean.replace(/\(\d+\+\)/, `(${getRandomInt(2, 5)}+)`);
         } else {
-          clean += ` (${getRandomInt(1, 6)}+)`;
+          clean += ` (${getRandomInt(2, 5)}+)`;
         }
       }
       return clean;
