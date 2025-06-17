@@ -1,0 +1,71 @@
+ADAM'S RANDOM ITEM GENERATOR — USER GUIDE
+=========================================
+
+SUPPORTED LIST TYPES
+--------------------
+
+This tool supports two types of lists based on the first column's header in your Excel file:
+
+1. WEAPON LIST
+2. VEHICLE LIST
+
+The program will automatically detect which logic to use based on the first column header.
+
+================================================================================
+⚔️ WEAPON LIST LOGIC
+================================================================================
+
+EXPECTED EXCEL FORMAT:
+| Column A (Weapon Name) | Column B (Modifiers 1) | Column C (Modifiers 2) |
+
+RULES:
+- If the weapon name includes "(melee only)":
+  → Pull modifiers ONLY from Column C (Modifiers 2)
+
+- If the weapon name does NOT include "(melee only)":
+  → Pull modifiers ONLY from Column B (Modifiers 1)
+
+- Number of modifiers per item:
+  → If the "Random Modifiers" toggle is ON, select a random number between 1 and 3
+  → If the toggle is OFF, use the number specified in the "Modifiers per Item" field
+
+================================================================================
+🚗 VEHICLE LIST LOGIC
+================================================================================
+
+EXPECTED EXCEL FORMAT:
+| Column A (Vehicle Name) | Column B (Modifiers) | Column C (One-Use Modifiers) |
+
+RULES:
+- If the vehicle name includes "(one use)":
+  → Pull modifiers ONLY from Column C (One-Use Modifiers)
+
+- If the vehicle name does NOT include "(one use)":
+  → Pull modifiers ONLY from Column B (Standard Modifiers)
+
+- Number of modifiers per item:
+  → If the "Random Modifiers" toggle is ON, select a random number between 1 and 3
+  → If the toggle is OFF, use the number specified in the "Modifiers per Item" field
+
+================================================================================
+✳️ ASTERISK MODIFIER RULE
+================================================================================
+
+This rule applies to BOTH weapon and vehicle lists:
+
+- Modifiers that begin with an asterisk (*) are treated as exclusive.
+- If one *modifier is chosen for an item, NO OTHER *modifiers will be added to that item.
+- Only one *modifier is allowed per item.
+- In the output, the asterisk (*) will be hidden for a cleaner look.
+
+================================================================================
+📁 SETUP INSTRUCTIONS
+================================================================================
+
+1. Extract the ZIP file anywhere on your desktop or local drive.
+2. Place your Excel file in the SAME FOLDER as the extracted files.
+3. Open the "index.html" file using any modern web browser (Chrome, Firefox, Edge, etc.).
+4. Upload your Excel file using the file input in the app.
+5. Set your item and modifier options and click "Generate Random List".
+
+That's it! Your randomized table will appear on the page.
