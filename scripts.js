@@ -57,10 +57,10 @@ function generateRandomItems() {
     let chosenMods = [];
 
     if (isMeleeOnly) {
-      chosenMods = getMultipleRandom(modifierPool2, numModifiers);
+      chosenMods = getFilteredRandomModifiers(modifierPool2, numModifiers);
     } else {
       const combinedPool = [...modifierPool1, ...modifierPool2];
-      chosenMods = getMultipleRandom(combinedPool, numModifiers);
+      chosenMods = getFilteredRandomModifiers(combinedPool, numModifiers);
     }
 
     results.push({ weapon, modifiers: chosenMods });
@@ -71,21 +71,34 @@ function generateRandomItems() {
   html += '<thead><tr><th>#</th><th>Weapon</th><th>Modifiers</th></tr></thead><tbody>';
 
   results.forEach((entry, idx) => {
-    html += `<tr><td>${idx + 1}</td><td>${entry.weapon}</td><td>${entry.modifiers.join(', ')}</td></tr>`;
+    const cleanedMods = entry.modifiers.map(m => m.replace(/^\*\s*/, '').trim());
+html += `<tr><td>${idx + 1}</td><td>${entry.weapon}</td><td>${cleanedMods.join(', ')}</td></tr>`;
   });
 
   html += '</tbody></table>';
   outputDiv.innerHTML = html;
 }
 
-// Utility functions
-function getRandomFromArray(arr) {
-  return arr[Math.floor(Math.random() * arr.length)];
+// Ensures only one asterisk modifier per list
+function getFilteredRandomModifiers(pool, maxCount) {
+  const shuffled = [...pool].sort(() => 0.5 - Math.random());
+  const result = [];
+
+  for (let i = 0; i < shuffled.length && result.length < maxCount; i++) {
+    const mod = shuffled[i];
+    const isAsterisk = mod.trim().startsWith('*');
+    const alreadyHasAsterisk = result.some(m => m.trim().startsWith('*'));
+
+    if (isAsterisk && alreadyHasAsterisk) continue;
+    result.push(mod);
+  }
+
+  return result;
 }
 
-function getMultipleRandom(arr, num) {
-  const shuffled = [...arr].sort(() => 0.5 - Math.random());
-  return shuffled.slice(0, num);
+// Utils
+function getRandomFromArray(arr) {
+  return arr[Math.floor(Math.random() * arr.length)];
 }
 
 function getRandomInt(min, max) {
