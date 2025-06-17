@@ -5,6 +5,8 @@ let modifierPool2 = [];
 document.getElementById('upload').addEventListener('change', handleFile, false);
 document.getElementById('generateBtn').addEventListener('click', generateRandomItems);
 
+let activeProcessor = null; // Will point to processWeaponList or processVehicleList
+
 function handleFile(event) {
   const file = event.target.files[0];
   const reader = new FileReader();
@@ -12,38 +14,69 @@ function handleFile(event) {
   reader.onload = function (e) {
     const data = new Uint8Array(e.target.result);
     const workbook = XLSX.read(data, { type: 'array' });
-
     const sheet = workbook.Sheets[workbook.SheetNames[0]];
     const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
 
-    // Reset lists
-    weaponList = [];
-    modifierPool1 = [];
-    modifierPool2 = [];
+    if (!rows.length || !rows[0][0]) {
+      alert('Invalid or empty Excel file.');
+      return;
+    }
 
-    rows.slice(1).forEach(row => {
-      const weapon = row[0]?.trim();
-      const mod1 = row[1]?.trim();
-      const mod2 = row[2]?.trim();
-
-      if (weapon) weaponList.push(weapon);
-      if (mod1) modifierPool1.push(mod1);
-      if (mod2) modifierPool2.push(mod2);
-    });
-
-    alert(`Loaded! Weapons: ${weaponList.length}, Modifier 1s: ${modifierPool1.length}, Modifier 2s: ${modifierPool2.length}`);
+    handleDataBasedOnHeader(rows);
   };
 
   reader.readAsArrayBuffer(file);
 }
 
-function generateRandomItems() {
-  const numItems = parseInt(document.getElementById('numItems').value);
-  const useRandomModifiers = document.getElementById('randomToggle').checked;
-  const outputDiv = document.getElementById('output');
+function handleDataBasedOnHeader(rows) {
+  const header = rows[0][0].toLowerCase().trim();
 
-  if (weaponList.length === 0 || (modifierPool1.length === 0 && modifierPool2.length === 0)) {
-    outputDiv.innerHTML = '<div class="alert alert-warning">Please upload a valid Excel file first.</div>';
+  if (header === "weapon") {
+    activeProcessor = () => processWeaponList(rows);
+    alert("Detected Weapon list — weapon logic enabled.");
+  } else if (header === "vehicle") {
+    activeProcessor = () => processVehicleList(rows);
+    alert("Detected Vehicle list — vehicle logic enabled.");
+  } else {
+    alert(`Unrecognized first column header: "${header}"`);
+    activeProcessor = null;
+  }
+}
+
+function generateRandomItems() {
+  if (activeProcessor) {
+    activeProcessor();
+  } else {
+    document.getElementById('output').innerHTML = '<div class="alert alert-danger">No valid Excel data loaded.</div>';
+  }
+}
+
+//
+// ========== WEAPON LOGIC ==========
+//
+
+function processWeaponList(rows) {
+  const useRandomModifiers = document.getElementById('randomToggle').checked;
+  const numItems = parseInt(document.getElementById('numItems').value);
+  const modifierCount = parseInt(document.getElementById('numModifiers').value);
+
+  // Reset pools
+  weaponList = [];
+  modifierPool1 = [];
+  modifierPool2 = [];
+
+  rows.slice(1).forEach(row => {
+    const weapon = row[0]?.trim();
+    const mod1 = row[1]?.trim();
+    const mod2 = row[2]?.trim();
+
+    if (weapon) weaponList.push(weapon);
+    if (mod1) modifierPool1.push(mod1);
+    if (mod2) modifierPool2.push(mod2);
+  });
+
+  if (weaponList.length === 0) {
+    document.getElementById('output').innerHTML = '<div class="alert alert-warning">No weapons found in file.</div>';
     return;
   }
 
@@ -52,34 +85,110 @@ function generateRandomItems() {
   for (let i = 0; i < numItems; i++) {
     const weapon = getRandomFromArray(weaponList);
     const isMeleeOnly = weapon.toLowerCase().includes('(melee only)');
-    const numModifiers = useRandomModifiers ? getRandomInt(1, 3) : parseInt(document.getElementById('numModifiers').value);
+    const chosenCount = useRandomModifiers ? getRandomInt(1, 3) : modifierCount;
 
-    let chosenMods = [];
+    let modifiers = [];
 
     if (isMeleeOnly) {
-      chosenMods = getFilteredRandomModifiers(modifierPool2, numModifiers);
+      modifiers = getFilteredRandomModifiers(modifierPool2, chosenCount);
     } else {
-      const combinedPool = [...modifierPool1, ...modifierPool2];
-      chosenMods = getFilteredRandomModifiers(combinedPool, numModifiers);
+      const combined = [...modifierPool1, ...modifierPool2];
+      modifiers = getFilteredRandomModifiers(combined, chosenCount);
     }
 
-    results.push({ weapon, modifiers: chosenMods });
+    results.push({ weapon, modifiers });
   }
 
-  // Display
+  renderWeaponTable(results);
+}
+
+function renderWeaponTable(results) {
   let html = '<table class="table table-dark table-bordered">';
   html += '<thead><tr><th>#</th><th>Weapon</th><th>Modifiers</th></tr></thead><tbody>';
 
   results.forEach((entry, idx) => {
     const cleanedMods = entry.modifiers.map(m => m.replace(/^\*\s*/, '').trim());
-html += `<tr><td>${idx + 1}</td><td>${entry.weapon}</td><td>${cleanedMods.join(', ')}</td></tr>`;
+    html += `<tr>
+      <td>${idx + 1}</td>
+      <td>${entry.weapon}</td>
+      <td>${cleanedMods.join(', ')}</td>
+    </tr>`;
   });
 
   html += '</tbody></table>';
-  outputDiv.innerHTML = html;
+  document.getElementById('output').innerHTML = html;
 }
 
-// Ensures only one asterisk modifier per list
+//
+// ========== VEHICLE LOGIC ==========
+//
+
+function processVehicleList(rows) {
+  const useRandomModifiers = document.getElementById('randomToggle').checked;
+  const numItems = parseInt(document.getElementById('numItems').value);
+  const modifierCount = parseInt(document.getElementById('numModifiers').value);
+
+  const vehicles = [];
+  const modifiers = [];
+  const addons = [];
+
+  rows.slice(1).forEach(row => {
+    const vehicle = row[0]?.trim();
+    const mod = row[1]?.trim();
+    const addon = row[2]?.trim();
+
+    if (vehicle) vehicles.push(vehicle);
+    if (mod) modifiers.push(mod);
+    if (addon) addons.push(addon);
+  });
+
+  if (vehicles.length === 0) {
+    document.getElementById('output').innerHTML = '<div class="alert alert-warning">No vehicles found in file.</div>';
+    return;
+  }
+
+  const results = [];
+
+  for (let i = 0; i < numItems; i++) {
+    const vehicle = getRandomFromArray(vehicles);
+    const chosenModCount = useRandomModifiers ? getRandomInt(1, 3) : modifierCount;
+
+    const chosenModifiers = getFilteredRandomModifiers(modifiers, chosenModCount);
+    const chosenAddon = getRandomFromArray(addons);
+
+    results.push({
+      vehicle,
+      modifiers: chosenModifiers,
+      addon: chosenAddon
+    });
+  }
+
+  renderVehicleTable(results);
+}
+
+function renderVehicleTable(results) {
+  let html = '<table class="table table-dark table-bordered">';
+  html += '<thead><tr><th>#</th><th>Vehicle</th><th>Modifiers</th><th>Addon</th></tr></thead><tbody>';
+
+  results.forEach((entry, idx) => {
+    const cleanedMods = entry.modifiers.map(m => m.replace(/^\*\s*/, '').trim());
+    const cleanAddon = entry.addon.replace(/^\*\s*/, '').trim();
+    html += `<tr>
+      <td>${idx + 1}</td>
+      <td>${entry.vehicle}</td>
+      <td>${cleanedMods.join(', ')}</td>
+      <td>${cleanAddon}</td>
+    </tr>`;
+  });
+
+  html += '</tbody></table>';
+  document.getElementById('output').innerHTML = html;
+}
+
+//
+// ========== UTILITIES ==========
+//
+
 function getFilteredRandomModifiers(pool, maxCount) {
   const shuffled = [...pool].sort(() => 0.5 - Math.random());
   const result = [];
@@ -87,16 +196,15 @@ function getFilteredRandomModifiers(pool, maxCount) {
   for (let i = 0; i < shuffled.length && result.length < maxCount; i++) {
     const mod = shuffled[i];
     const isAsterisk = mod.trim().startsWith('*');
-    const alreadyHasAsterisk = result.some(m => m.trim().startsWith('*'));
+    const hasAsteriskAlready = result.some(m => m.trim().startsWith('*'));
 
-    if (isAsterisk && alreadyHasAsterisk) continue;
+    if (isAsterisk && hasAsteriskAlready) continue;
     result.push(mod);
   }
 
   return result;
 }
 
-// Utils
 function getRandomFromArray(arr) {
   return arr[Math.floor(Math.random() * arr.length)];
 }
